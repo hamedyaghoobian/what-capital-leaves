@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Capital Leaves · Readings, Otherwise</title>
+<meta name="description" content="Marx's Capital, all three volumes, with every word removed: a sea of punctuation, haunted by what was taken out.">
+<script>
+  // light or dark, shared by the painting and the page; dark unless the visitor chose light
+  try { document.documentElement.dataset.theme = localStorage.getItem("what-capital-leaves:theme") === "light" ? "light" : "dark"; }
+  catch (_) { document.documentElement.dataset.theme = "dark"; }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="painting.css?v=5">
+</head>
+<body>
+<button id="theme" class="theme-toggle" type="button">light</button>
+
+<p class="kicker"><a href="../">Readings, Otherwise</a> <span>No. 1</span></p>
+
+<main class="room">
+  <figure class="frame" id="frame">
+    <canvas id="sea" aria-label="A painting made of the punctuation of Capital, volumes I to III. Zoom in to read it."></canvas>
+    <div id="ghosts" aria-hidden="true"></div>
+    <div class="controls">
+      <button id="zoom-out" title="Zoom out (−)" aria-label="Zoom out">−</button>
+      <button id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button id="reset" title="See the whole painting (0)" aria-label="See the whole painting">◻</button>
+      <button id="layers" title="Take the painting apart" aria-label="Take the painting apart into its layers">≋</button>
+    </div>
+    <p class="hint" id="hint">scroll or pinch to come closer · drag to move · stay still</p>
+    <aside id="panel" aria-live="polite">
+      <p class="where" id="where"></p>
+      <p class="sentence" id="sentence"></p>
+    </aside>
+  </figure>
+
+  <section class="label" aria-label="Wall label">
+    <h1>What Capital Leaves</h1>
+    <p class="meta">Karl Marx, <em>Capital</em>, Volumes I–III, 1867–1894 / 2026</p>
+    <p class="meta">Punctuation on screen. <span id="n-marks">…</span> marks, <span id="n-tokens">…</span> tokens</p>
+    <p class="labour">Living labour absorbed from you: <b id="labour">0 s</b> · <b id="touched">0</b> marks taken in
+      <button id="strike" title="Withdraw your labour: your traces and your time are taken back" disabled>Strike</button></p>
+    <p class="strike-note" id="strike-note" aria-live="polite">On strike. The painting has nothing to live on.</p>
+
+    <div class="text">
+      <p>Every word of the three volumes has been taken out. What is left is the punctuation, laid down in reading order and painted as a sea, after Turner's <em>Slave Ship</em> (1840). Volume I, production, is the sky. Volume II, circulation, is where the water starts. Volume III, the process as a whole, is the deep.</p>
+      <p>From a distance it reads as wealth, one surface, an "immense accumulation of commodities." Come closer and the currents settle into marks, and the marks into the order in which Marx wrote them. Stay still and the words that were taken out come back up through the water.</p>
+      <p>The pale lights are quotation marks. In <em>Capital</em> these are the places where other people speak: factory inspectors, physicians, and the children who worked through the night, in their own words, in Marx's footnotes. Touch one.</p>
+      <p>The painting lives on attention. It is lifeless until someone looks at it. Every mark your pointer crosses is taken in and turns red, the only red in the picture, and the time you spend is counted. The red does not last. It sinks back into the grey within a minute, the way living labour becomes dead labour inside capital. Leave, and the whole painting drains.</p>
+      <p>Or strike. Withdraw your labour and your traces and time are taken back, and for a while the painting has nothing to live on.</p>
+      <p>Press ≋ in the corner to take the painting apart: the ground, the marks, the voices, the ghosts.</p>
+    </div>
+
+    <p class="colophon">Text: the marxists.org edition, OCR'd by the Internet Archive, cleaned and counted with code. Tokens are counted with the o200k tokenizer, the way a language model would read the same pages. Made in 2026 with Claude, a language model built from other people's writing, taking apart the book about dead labour. <a href="read/">Read it as a page instead →</a></p>
+  </section>
+</main>
+
+<noscript><p class="fallback">This painting needs JavaScript. <a href="read/">Read it as a page instead.</a></p></noscript>
+
+<script src="painting.js?v=5"></script>
+</body>
+</html>

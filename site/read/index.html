@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Capital Leaves · Readings, Otherwise</title>
+<meta name="description" content="The three volumes of Marx's Capital with every word removed. Only the punctuation remains.">
+<script>
+  // light or dark, shared by the painting and the page; dark unless the visitor chose light
+  try { document.documentElement.dataset.theme = localStorage.getItem("what-capital-leaves:theme") === "light" ? "light" : "dark"; }
+  catch (_) { document.documentElement.dataset.theme = "dark"; }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
+</head>
+<body class="hide-h hide-a">
+<button id="theme" class="theme-toggle" type="button">light</button>
+
+<header class="intro">
+  <p class="kicker"><a href="../../">Readings, Otherwise</a> <span>No. 1</span> <span>· <a href="../">see it as a painting</a></span></p>
+  <h1>What Capital Leaves</h1>
+  <p class="lede">Take the three volumes of Marx's <em>Capital</em> and remove every word. What remains is <strong id="total">…</strong> marks: commas, full stops, the parentheses where Engels steps in to explain, the quotation marks of factory inspectors and political economists. The argument is gone. Its breathing is still here.</p>
+  <p class="how">Scroll to read. Hover or tap any mark to bring back the sentence it came from. Use the legend to hide a mark, or double-click it to see only that mark. Drag along the bar on the right to race through the book.</p>
+</header>
+
+<main id="book" aria-label="The punctuation of Capital, volumes I to III"></main>
+
+<nav id="rail" aria-label="Chapters"></nav>
+
+<aside id="legend" aria-label="Marks"></aside>
+
+<aside id="panel" aria-live="polite">
+  <p class="where" id="where"></p>
+  <p class="sentence" id="sentence"></p>
+</aside>
+
+<footer class="colophon">
+  <p>Text: <em>Capital</em>, Volumes I–III, in the Moore &amp; Aveling (I) and Progress Publishers (II, III) English translations, as published on marxists.org and OCR'd by the Internet Archive. The scanner made its own reading. Some commas are mis-seen full stops, and some footnote brackets survived the cleaning. Numbers lose their separators. Hyphens and apostrophes sit inside words, so they start hidden. Switch them on to see Marx's compound nouns, <em>labour-power</em> and <em>surplus-value</em>, come back.</p>
+  <p>Volumes II and III were assembled by Engels from Marx's manuscripts after Marx's death in 1883.</p>
+</footer>
+
+<script src="app.js?v=3"></script>
+</body>
+</html>

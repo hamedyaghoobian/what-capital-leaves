@@ -1,0 +1,5 @@
+raw/
+previews/
+.claude/
+.DS_Store
+__pycache__/
