@@ -246,6 +246,8 @@ a { color: inherit; }
   color: var(--muted);
 }
 
+.label .colophon-code { margin-top: .4rem; padding-top: 0; border-top: 0; }
+
 .fallback { text-align: center; color: var(--muted); }
 
 @media (max-width: 640px) {
