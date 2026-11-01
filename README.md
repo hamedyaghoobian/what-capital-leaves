@@ -11,7 +11,8 @@ No. 1 in *Readings, Otherwise*, a series of pieces that take a book apart and ke
 - **The sea.** Every mark is a point drawn in WebGL. From a distance each is a brushstroke drifting on a current: Volume I (production) is the sky, Volume II (circulation) is where the water starts, Volume III (the process as a whole) is the deep. Zoom in and the currents settle into the marks, in the order Marx wrote them.
 - **The ghosts.** Stay still and the words that were taken out rise through the water, drawn from the chapter underneath.
 - **The voices.** Quotation marks glow. In *Capital* they are where other people speak: factory inspectors, physicians, child workers. Click one to read the quoted passage; click any other mark for its sentence.
-- **Living labour.** The painting is lifeless until someone looks at it. The pointer leaves red traces that sink back into the grey within a minute, and the time spent is counted. **Strike** withdraws your labour.
+- **The machine reads.** A pale light moves through the marks in order, from the first sentence of Volume I to the last of Volume III, at about the pace a language model reads (1,200 tokens a second). The words it passes over run along the top of the frame. It does not need you for this. **Stop the machine** pauses it; it starts again.
+- **You write.** Below the painting is a field where each word disappears as soon as you finish it, so only your punctuation stays. Press Enter and your marks drop into the sea in red, the only red in the picture, just ahead of the light, and the machine reads them next. They stay in your browser only.
 - **Layers.** ≋ takes the painting apart into ground, marks, voices and ghosts.
 - **Reading page.** `read/` is the same text as a scrolling page of punctuation, with a chapter rail you can drag to race through the book.
 - Light and dark modes, shared between the two pages; dark by default.

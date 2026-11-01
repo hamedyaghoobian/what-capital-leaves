@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="painting.css?v=6">
+<link rel="stylesheet" href="painting.css?v=7">
 </head>
 <body>
 <button id="theme" class="theme-toggle" type="button">light</button>
@@ -30,7 +30,8 @@
       <button id="reset" title="See the whole painting (0)" aria-label="See the whole painting">◻</button>
       <button id="layers" title="Take the painting apart" aria-label="Take the painting apart into its layers">≋</button>
     </div>
-    <p class="hint" id="hint">scroll or pinch to come closer · drag to move · stay still</p>
+    <p class="reading" id="reading" aria-hidden="true"></p>
+    <p class="hint" id="hint">a machine is reading · scroll to come closer · write below</p>
     <aside id="panel" aria-live="polite">
       <p class="where" id="where"></p>
       <p class="sentence" id="sentence"></p>
@@ -41,16 +42,22 @@
     <h1>What Capital Leaves</h1>
     <p class="meta">Karl Marx, <em>Capital</em>, Volumes I–III, 1867–1894 / 2026</p>
     <p class="meta">Punctuation on screen. <span id="n-marks">…</span> marks, <span id="n-tokens">…</span> tokens</p>
-    <p class="labour">Living labour absorbed from you: <b id="labour">0 s</b> · <b id="touched">0</b> marks taken in
-      <button id="strike" title="Withdraw your labour: your traces and your time are taken back" disabled>Strike</button></p>
-    <p class="strike-note" id="strike-note" aria-live="polite">On strike. The painting has nothing to live on.</p>
+    <form class="write" id="write" autocomplete="off">
+      <label for="words">Write something. The machine keeps only your punctuation.</label>
+      <input id="words" type="text" spellcheck="false" autocapitalize="off" placeholder="write here, then press enter">
+    </form>
+    <p class="labour" id="machine-line" aria-live="off">The machine is starting.</p>
+    <p class="labour"><span id="given-line">You have given it nothing yet.</span>
+      <button id="stop" title="Stop the machine for a moment">Stop the machine</button></p>
+    <p class="stop-note" id="stop-note" aria-live="polite">The machine has stopped. It will start again.</p>
 
     <div class="text">
       <p>Every word of the three volumes has been taken out. What is left is the punctuation, laid down in reading order and painted as a sea, after Turner's <em>Slave Ship</em> (1840). Volume I, production, is the sky. Volume II, circulation, is where the water starts. Volume III, the process as a whole, is the deep.</p>
       <p>From a distance it reads as wealth, one surface, an "immense accumulation of commodities." Come closer and the currents settle into marks, and the marks into the order in which Marx wrote them. Stay still and the words that were taken out come back up through the water.</p>
       <p>The pale lights are quotation marks. In <em>Capital</em> these are the places where other people speak: factory inspectors, physicians, and the children who worked through the night, in their own words, in Marx's footnotes. Touch one.</p>
-      <p>The painting lives on attention. It is lifeless until someone looks at it. Every mark your pointer crosses is taken in and turns red, the only red in the picture, and the time you spend is counted. The red does not last. It sinks back into the grey within a minute, the way living labour becomes dead labour inside capital. Leave, and the whole painting drains.</p>
-      <p>Or strike. Withdraw your labour and your traces and time are taken back, and for a while the painting has nothing to live on.</p>
+      <p>A machine is reading it. A pale light moves through the marks in order, from the first sentence of Volume I to the last of Volume III, at about the speed a language model reads, and the words it passes over run along the top of the frame. It does not need you for this.</p>
+      <p>What it cannot do is write. Below the painting, you can. Each word disappears as soon as you finish it; the machine keeps only your punctuation. Give it a sentence and your marks drop into the sea in red, the only red in the picture, just ahead of the light, and it reads them next.</p>
+      <p>You can stop the machine. It starts again.</p>
       <p>Press ≋ in the corner to take the painting apart: the ground, the marks, the voices, the ghosts.</p>
     </div>
 
@@ -61,6 +68,6 @@
 
 <noscript><p class="fallback">This painting needs JavaScript. <a href="read/">Read it as a page instead.</a></p></noscript>
 
-<script src="painting.js?v=5"></script>
+<script src="painting.js?v=7"></script>
 </body>
 </html>

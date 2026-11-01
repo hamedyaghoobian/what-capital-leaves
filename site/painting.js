@@ -25,9 +25,6 @@ const CELL_W = 0.6;           // a mark's cell is 0.6 wide, 1 tall (world units)
 const PARA_GAP = 3;           // empty cells between paragraphs
 const MAX_CELL_PX = 56;       // closest zoom: a cell this many CSS pixels tall
 const IDLE_MS = 2600;         // stillness before the words come back
-const STORE = "what-capital-leaves:labour";
-const FADE_STEP_MS = 240;      // a trace loses 1/255 of its red this often: gone in about a minute
-const STRIKE_MS = 9000;        // how long a strike leaves the painting with nothing to live on
 
 const canvas = document.getElementById("sea");
 const frame = document.getElementById("frame");
@@ -64,7 +61,9 @@ let data, chapters = [];
 let N = 0, COLS = 0, ROWS = 0, W = 0, H = 0;
 let grid;                      // cell -> mark index, -1 if empty
 let markType, markChapter, markLocal, markVertex;
-let touch, touchDirty = false, touchedCount = 0, traced = [];
+let touch, touchDirty = false;   // 255 for a mark a visitor gave the machine
+const EXTRA = 6000;            // room after the book's own marks for the punctuation visitors give
+let markBuf, extraCount = 0;
 let quoteStart = 0;            // vertices from here on are quotation marks
 let horizon = 0.41;
 
@@ -116,7 +115,7 @@ function layout() {
   for (let i = 0; i < N; i++) if (markType[i] === OPEN_Q || markType[i] === CLOSE_Q) order.push(i);
 
   markVertex = new Uint32Array(N);
-  const verts = new Float32Array(N * 4);   // x, y, type, phase
+  const verts = new Float32Array((N + EXTRA) * 4);   // x, y, type, phase
   order.forEach((m, v) => {
     markVertex[m] = v;
     verts[v * 4] = homeX[m];
@@ -124,7 +123,7 @@ function layout() {
     verts[v * 4 + 2] = markType[m];
     verts[v * 4 + 3] = (m * 0.61803) % 1;
   });
-  touch = new Uint8Array(N);
+  touch = new Uint8Array(N + EXTRA);
   return verts;
 }
 
@@ -182,6 +181,9 @@ uniform vec4 uLook[16];
 uniform vec3 uTint[16];
 uniform float uLayer[16];
 uniform float uAsk;
+uniform float uHead, uCols, uRunning;
+uniform vec3 uMachineCol;
+uniform float uLift;
 uniform vec3 uTouchCol;
 out vec3 vColor;
 out float vAlpha, vAngle, vType;
@@ -217,16 +219,25 @@ void main() {
 
   bool quote = t == 7 || t == 8;
   bool asks = uAsk > 0.5 && t == 13;
+  // the machine's light: bright where it is reading, a short afterglow behind it
+  // and a thin line of light along the row it is on, from the margin up to where it has reached
+  float behind = uHead - (floor(home.y) * uCols + floor(home.x / 0.6));
+  float sameRow = floor(home.y) == floor(uHead / uCols) ? 1.0 : 0.0;
+  float lit = behind >= 0.0 ? max(exp(-behind / 45.0), max(exp(-behind / 400.0) * 0.45, sameRow * 0.3)) : 0.0;
+  lit *= mix(0.4, 1.0, uRunning);
   float strokePx = max(uScale * 2.5, 3.0) * look.z;
   float glyphPx = uScale * (quote ? 1.45 : 1.3);
-  float size = mix(strokePx, glyphPx, uGlyph) * (1.0 + aTouch * 0.25);
+  float size = mix(strokePx, glyphPx, uGlyph) * (1.0 + aTouch * 0.25 + lit * lit * 2.2);
   gl_PointSize = size * k * uDpr;
 
   vec3 g = ground(uv);
   vec3 c = mix(g * look.x, uTint[t], look.y);
-  // a faint trace is dark rust; a full one is the bright red of living labour
+  // the visitor's marks are the only red in the picture
   vec3 red = mix(uTouchCol * vec3(0.45, 0.32, 0.3), uTouchCol, smoothstep(0.15, 0.9, aTouch));
   c = mix(c, red, smoothstep(0.0, 0.35, aTouch) * 0.9);
+  // up close on the dark sea, the marks lift so they can be read
+  c = mix(c, vec3(0.82, 0.79, 0.76) * look.x, uGlyph * uLift);
+  c = mix(c, uMachineCol, lit);
   // lanterns are mostly dim and now and then flare, each on its own clock
   if (quote) c *= 0.14 + 1.7 * pow(0.5 + 0.5 * sin(uTime * 0.6 + aMark.w * 60.0), 10.0);
   // Marx's own questions flicker on a slower clock
@@ -344,7 +355,7 @@ function setupGL(verts) {
 
   markVao = gl.createVertexArray();
   gl.bindVertexArray(markVao);
-  const vb = gl.createBuffer();
+  const vb = markBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vb);
   gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
   const aMark = gl.getAttribLocation(markProg, "aMark");
@@ -352,7 +363,7 @@ function setupGL(verts) {
   gl.vertexAttribPointer(aMark, 4, gl.FLOAT, false, 0, 0);
   touchBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, touchBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(N), gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(N + EXTRA), gl.DYNAMIC_DRAW);
   const aTouch = gl.getAttribLocation(markProg, "aTouch");
   gl.enableVertexAttribArray(aTouch);
   gl.vertexAttribPointer(aTouch, 1, gl.UNSIGNED_BYTE, true, 0, 0);
@@ -533,7 +544,6 @@ canvas.addEventListener("pointermove", e => {
   const speed = prev ? 0 : Math.hypot(e.movementX || 0, e.movementY || 0);
   stir = Math.min(1, stir + speed * 0.02);
   mouseW = toWorld(p[0], p[1]);
-  takeIn(p[0], p[1]);
   wake();
 });
 
@@ -547,7 +557,7 @@ canvas.addEventListener("pointerup", e => {
   release(e);
 });
 canvas.addEventListener("pointercancel", release);
-canvas.addEventListener("pointerleave", () => { mouseW = [-1e4, -1e4]; lastBrush = null; });
+canvas.addEventListener("pointerleave", () => { mouseW = [-1e4, -1e4]; });
 canvas.addEventListener("dblclick", e => { const [x, y] = local(e); zoomAt(x, y, 3); });
 
 document.getElementById("zoom-in").onclick = () => zoomAt(cw / 2, ch / 2, 2);
@@ -569,70 +579,6 @@ function wake() {
   if (explodeTarget) return;
   for (const g of ghostLayer.children) g.classList.add("flee");
   document.getElementById("hint").classList.add("gone");
-}
-
-// Marks under the pointer are taken in, with a brush rather than a stamp: a soft round tip,
-// a little longer along the stroke, whose edge catches some marks and misses others the way a
-// dry brush does. Slow strokes are wide and heavy; fast ones thin and light. Going over a trace
-// deepens it.
-const BRUSH_PX = 17;           // radius of a slow stroke, in screen pixels
-let lastBrush = null;          // where the previous pointer sample landed, to join the stroke up
-
-function hash(n) {             // a fixed, per-mark random number in [0, 1)
-  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
-  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
-  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
-}
-
-function takeIn(mx, my) {
-  if (striking()) return;
-  const now = performance.now();
-  const prev = lastBrush && now - lastBrush.t < 120 ? lastBrush : null;
-  if (!prev) {
-    lastBrush = { x: mx, y: my, t: now, carry: 0 };
-    return stamp(mx, my, 1, 0, BRUSH_PX * 0.6, 0.5);
-  }
-  const dx = mx - prev.x, dy = my - prev.y, len = Math.hypot(dx, dy);
-  if (len < 0.5) return;
-  lastBrush = { x: mx, y: my, t: now, carry: 0 };
-  const speed = len / Math.max(1, now - prev.t);                  // px per ms
-  const slow = 1 / (1 + speed * 0.9);                               // 1 when still, toward 0 when fast
-  const radius = BRUSH_PX * (0.35 + 0.65 * slow);
-  const strength = 0.45 + 0.55 * slow;
-  const ux = dx / len, uy = dy / len;
-  const step = Math.max(1.5, radius * 0.35);
-  // stamps keep an even spacing along the whole stroke, however short each pointer move is
-  let d = step - prev.carry;
-  for (; d <= len; d += step) stamp(prev.x + ux * d, prev.y + uy * d, ux, uy, radius, strength);
-  lastBrush.carry = len - (d - step);
-}
-
-function stamp(mx, my, ux, uy, radius, strength) {
-  const [wx, wy] = toWorld(mx, my);
-  const r = radius / view.s;
-  const c0 = Math.max(0, Math.floor((wx - r) / CELL_W)), c1 = Math.min(COLS - 1, Math.floor((wx + r) / CELL_W));
-  const r0 = Math.max(0, Math.floor(wy - r)), r1 = Math.min(ROWS - 1, Math.floor(wy + r));
-  for (let row = r0; row <= r1; row++) {
-    for (let col = c0; col <= c1; col++) {
-      const m = grid[row * COLS + col];
-      if (m < 0) continue;
-      // distance in screen pixels, stretched so the tip is longer along the stroke than across it
-      const px = ((col + 0.5) * CELL_W - wx) * view.s, py = (row + 0.5 - wy) * view.s;
-      const along = px * ux + py * uy, across = px * uy - py * ux;
-      const d = Math.hypot(along * 0.75, across) / radius;
-      if (d >= 1) continue;
-      const fall = Math.pow(1 - d * d, 1.6);
-      if (hash(m) > fall * 1.25) continue;                         // the ragged edge
-      const v = markVertex[m];
-      const add = 255 * strength * fall * (0.55 + 0.45 * hash(m + 7919));
-      const was = touch[v];
-      const now = Math.min(255, Math.max(was, was * 0.6 + add));     // layering deepens a trace
-      if (now <= was) continue;
-      if (!was) { traced.push(v); touchedCount++; strikeBtn.disabled = false; }
-      touch[v] = now;
-      touchDirty = true;
-    }
-  }
 }
 
 // ---------- what a mark came from ----------
@@ -767,74 +713,110 @@ function haunt(now) {
   }
 }
 
-// ---------- living labour ----------
+// ---------- life ----------
+// The painting is lifeless until someone looks at it, and drains while nobody does.
 
-let labour = 0, life = 0.08, hiddenAt = 0;
-try { labour = +localStorage.getItem(STORE) || 0; } catch (_) {}
+let life = 0.08, hiddenAt = 0;
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) hiddenAt = performance.now();
   else if (hiddenAt) life = Math.max(0.08, life - (performance.now() - hiddenAt) / 25000);
 });
 
-function clock(s) {
-  s = Math.floor(s);
-  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
-  return h ? `${h} h ${m} min` : m ? `${m} min ${s % 60} s` : `${s} s`;
+function work(dt) {
+  if (!document.hidden) life = Math.min(1, life + dt / 25);
 }
 
-// Traces fade: the red your pointer left sinks back into the grey sea. Living labour becomes dead labour.
-let lastFade = 0;
-function fade(now) {
-  if (now - lastFade < FADE_STEP_MS || !traced.length) return;
-  const steps = Math.min(8, Math.floor((now - lastFade) / FADE_STEP_MS));
-  lastFade = now;
-  let k = 0;
-  for (const v of traced) {
-    touch[v] = Math.max(0, touch[v] - steps);
-    if (touch[v]) traced[k++] = v;
+// ---------- the machine reads; you write ----------
+
+const TOKENS_PER_S = 1200;     // roughly the pace of a language model reading
+const STOP_MS = 9000;
+let head = 0, stoppedUntil = 0, given = 0, giftAt = 0, lastReadout = 0, reading = false;
+const machineLine = document.getElementById("machine-line");
+const readingLine = document.getElementById("reading");
+const givenLine = document.getElementById("given-line");
+
+// the mark the machine has just reached
+function headMark() {
+  let c = Math.floor(head);
+  while (c > 0 && grid[c] < 0) c--;
+  return Math.max(0, grid[c]);
+}
+
+function machine(now, dt) {
+  const running = now >= stoppedUntil;
+  if (running && !document.hidden) {
+    head += TOKENS_PER_S * (COLS * ROWS) / data.tokens * dt;
+    if (head >= COLS * ROWS) head = 0;            // and it begins again
   }
-  traced.length = k;
-  touchDirty = true;
+  if (now - lastReadout < 140) return running;
+  lastReadout = now;
+  const m = headMark(), ch = chapters[markChapter[m]];
+  const token = Math.round(head / (COLS * ROWS) * data.tokens);
+  machineLine.textContent = `${running ? "The machine is reading" : "The machine has stopped at"} Volume ${ch.vol}` +
+    `${ch.n ? `, Chapter ${ch.n}` : ""}, ${ch.title}. Token ${fmt.format(token)} of ${fmt.format(data.tokens)}.`;
+  if (!reading) {
+    reading = true;
+    loadText(ch.key).then(({ text, pos }) => {
+      reading = false;
+      const p = pos[markLocal[m]];
+      readingLine.textContent = text.slice(Math.max(0, p - 110), p + 1).replace(/\s+/g, " ").replace(/^\S*\s/, "");
+    });
+  }
+  return running;
 }
 
-// Strike: withdraw your labour. The traces go, the count goes back to nothing, and for a while
-// the painting has nothing to live on.
-// Strike starts disabled: there is nothing to withdraw until your pointer has taken something in.
-const strikeBtn = document.getElementById("strike");
-let strikeUntil = 0;
-const striking = () => performance.now() < strikeUntil;
+const stopBtn = document.getElementById("stop");
+stopBtn.addEventListener("click", stopMachine);
 
-function strike() {
-  strikeUntil = performance.now() + STRIKE_MS;
-  strikeBtn.disabled = true;
-  touch.fill(0);
-  traced.length = 0;
-  touchDirty = true;
-  touchedCount = 0;
-  labour = 0;
-  life = 0;
-  try { localStorage.removeItem(STORE); } catch (_) {}
-  document.getElementById("labour").textContent = clock(0);
-  document.getElementById("touched").textContent = "0";
-  const note = document.getElementById("strike-note");
+function stopMachine() {
+  stoppedUntil = performance.now() + STOP_MS;
+  const note = document.getElementById("stop-note");
   note.classList.add("show");
-  setTimeout(() => note.classList.remove("show"), STRIKE_MS);
+  setTimeout(() => note.classList.remove("show"), STOP_MS);
 }
-strikeBtn.addEventListener("click", strike);
 
-let lastSave = 0;
-function work(dt, now) {
-  fade(now);
-  if (document.hidden || striking()) return;
-  labour += dt;
-  life = Math.min(1, life + dt / 25);
-  if (now - lastSave > 2000) {
-    lastSave = now;
-    try { localStorage.setItem(STORE, String(Math.round(labour))); } catch (_) {}
-    document.getElementById("labour").textContent = clock(labour);
-    document.getElementById("touched").textContent = fmt.format(touchedCount);
+// The writing field: a word is gone the moment it is finished. Only punctuation stays.
+const words = document.getElementById("words");
+const WORD = /[\p{L}\p{N}]+(?:['\u2019-][\p{L}\p{N}]+)*(?=[^\p{L}\p{N}'\u2019-])/gu;
+words.addEventListener("input", () => {
+  const kept = words.value.replace(WORD, "").replace(/\s+/g, "");
+  if (kept !== words.value) words.value = kept;
+});
+
+const GIVE = { "\u2013": "\u2014", "\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'" };
+document.getElementById("write").addEventListener("submit", e => {
+  e.preventDefault();
+  const marks = words.value.replace(/[\p{L}\p{N}\s]/gu, "").replace(/\.\.\./g, "\u2026");
+  words.value = "";
+  let open = true;
+  const types = [];
+  for (const c0 of marks) {
+    const c = GIVE[c0] || c0;
+    if (c === '"') { types.push(open ? OPEN_Q : CLOSE_Q); open = !open; }
+    else if (c === "'") types.push(T["\u2019"]);
+    else if (c in T) types.push(T[c]);
   }
+  if (!types.length) { givenLine.textContent = "Nothing to keep. It only takes punctuation."; return; }
+  give(types);
+});
+
+// Your marks land just ahead of the light, between the lines, in red. It reads them next.
+function give(types) {
+  giftAt = Math.max(giftAt, Math.floor(head) + 6);
+  const total = COLS * ROWS;
+  gl.bindBuffer(gl.ARRAY_BUFFER, markBuf);
+  for (const t of types) {
+    if (extraCount >= EXTRA) break;
+    const cell = giftAt++ % total, v = N + extraCount++;
+    gl.bufferSubData(gl.ARRAY_BUFFER, v * 16,
+      new Float32Array([(cell % COLS + 0.5) * CELL_W, Math.floor(cell / COLS) + 0.95, t, Math.random()]));
+    touch[v] = 255;
+  }
+  touchDirty = true;
+  given += types.length;
+  givenLine.textContent = `You have given it ${fmt.format(given)} mark${given === 1 ? "" : "s"}. It kept none of your words.`;
+  document.getElementById("n-marks").textContent = fmt.format(N + extraCount);
 }
 
 // ---------- the loop ----------
@@ -853,8 +835,9 @@ function frameLoop(now) {
   explode += (explodeTarget - explode) * (1 - Math.pow(0.02, dt));
   if (Math.abs(explodeTarget - explode) < 0.0005) explode = explodeTarget;
   const e = explode * explode * (3 - 2 * explode);
-  work(dt, now);
+  work(dt);
   haunt(now);
+  const running = machine(now, dt);
 
   const glyph = smooth(9, 18, view.s) * (1 - e);
   const drift = (reduceMotion ? 0.35 : 1) * (1 - smooth(4, 14, view.s));
@@ -912,12 +895,19 @@ function frameLoop(now) {
   gl.uniform1f(U.uDpr, dpr);
   gl.uniform1f(U.uGlyph, glyph);
   gl.uniform1f(U.uHorizon, horizon);
+  gl.uniform1f(U.uHead, head);
+  gl.uniform1f(U.uCols, COLS);
+  gl.uniform1f(U.uRunning, running ? 1 : 0);
+  gl.uniform1f(U.uLift, theme() === "light" ? 0 : 0.75);
+  gl.uniform3fv(U.uMachineCol, theme() === "light" ? [0.1, 0.1, 0.12] : [0.75, 0.9, 1.0]);
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);     // paint
   gl.drawArrays(gl.POINTS, 0, quoteStart);
   if (PAL.glow) gl.blendFunc(gl.ONE, gl.ONE);       // light; on paper the voices are ink
   gl.drawArrays(gl.POINTS, quoteStart, N - quoteStart);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);     // the visitor's marks, painted
+  if (extraCount) gl.drawArrays(gl.POINTS, N, extraCount);
   gl.disable(gl.BLEND);
 
   for (const g of ghostLayer.children) {
@@ -961,7 +951,6 @@ async function start() {
   frame.style.setProperty("--aspect", (W / H).toFixed(4));
   document.getElementById("n-marks").textContent = fmt.format(N);
   document.getElementById("n-tokens").textContent = fmt.format(data.tokens);
-  document.getElementById("labour").textContent = clock(labour);
 
   await document.fonts.load('500 40px "EB Garamond"').catch(() => {});
   try {
